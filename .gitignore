@@ -1,0 +1,6 @@
+*.pyc
+__pycache__/
+hackersfoot.db
+temp_*.jpg
+.env
+.DS_Store
