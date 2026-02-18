@@ -704,9 +704,10 @@ async def subdomain_enum_advanced(domain):
 
 # -------------------- WHOIS LOOKUP (COMPLETE) --------------------
 async def whois_lookup_complete(domain):
-    """Complete WHOIS intelligence"""
+    """Complete WHOIS intelligence with full details"""
     try:
-        w = whois.whois(domain)
+        import whois as whois_module
+        w = whois_module.whois(domain)
         
         result = f"""🔍 *Complete WHOIS Intelligence*
 ━━━━━━━━━━━━━━━━━━━━━
@@ -714,43 +715,73 @@ async def whois_lookup_complete(domain):
         
         # Registrar Information
         result += f"\n📋 *Registrar Information*"
-        result += f"\n  • Registrar: {escape(w.registrar or 'N/A')}"
-        result += f"\n  • Registrar URL: {escape(w.registrar_url or 'N/A')}"
-        result += f"\n  • Registrar IANA ID: {escape(w.registrar_iana_id or 'N/A')}"
-        result += f"\n  • Registrar Abuse Email: {escape(w.registrar_abuse_email or 'N/A')}"
-        result += f"\n  • Registrar Abuse Phone: {escape(w.registrar_abuse_phone or 'N/A')}"
+        if hasattr(w, 'registrar') and w.registrar:
+            result += f"\n  • Registrar: {escape(str(w.registrar))}"
+        if hasattr(w, 'registrar_url') and w.registrar_url:
+            result += f"\n  • Registrar URL: {escape(str(w.registrar_url))}"
+        if hasattr(w, 'registrar_iana_id') and w.registrar_iana_id:
+            result += f"\n  • Registrar IANA ID: {escape(str(w.registrar_iana_id))}"
+        if hasattr(w, 'registrar_abuse_email') and w.registrar_abuse_email:
+            result += f"\n  • Abuse Email: {escape(str(w.registrar_abuse_email))}"
+        if hasattr(w, 'registrar_abuse_phone') and w.registrar_abuse_phone:
+            result += f"\n  • Abuse Phone: {escape(str(w.registrar_abuse_phone))}"
         
         # Registrant Information
-        result += f"\n\n👤 *Registrant Information*"
-        result += f"\n  • Name: {escape(w.registrant_name or 'Private')}"
-        result += f"\n  • Organization: {escape(w.registrant_organization or 'Private')}"
-        result += f"\n  • Street: {escape(w.registrant_street or 'Private')}"
-        result += f"\n  • City: {escape(w.registrant_city or 'Private')}"
-        result += f"\n  • State: {escape(w.registrant_state or 'Private')}"
-        result += f"\n  • Postal Code: {escape(w.registrant_postal_code or 'Private')}"
-        result += f"\n  • Country: {escape(w.registrant_country or 'Private')}"
-        result += f"\n  • Phone: {escape(w.registrant_phone or 'Private')}"
-        result += f"\n  • Email: {escape(w.registrant_email or 'Private')}"
+        if any([hasattr(w, 'registrant_name'), hasattr(w, 'registrant_organization'), 
+                hasattr(w, 'registrant_country'), hasattr(w, 'registrant_email')]):
+            result += f"\n\n👤 *Registrant Information*"
+            if hasattr(w, 'registrant_name') and w.registrant_name:
+                result += f"\n  • Name: {escape(str(w.registrant_name))}"
+            if hasattr(w, 'registrant_organization') and w.registrant_organization:
+                result += f"\n  • Organization: {escape(str(w.registrant_organization))}"
+            if hasattr(w, 'registrant_street') and w.registrant_street:
+                result += f"\n  • Street: {escape(str(w.registrant_street))}"
+            if hasattr(w, 'registrant_city') and w.registrant_city:
+                result += f"\n  • City: {escape(str(w.registrant_city))}"
+            if hasattr(w, 'registrant_state') and w.registrant_state:
+                result += f"\n  • State: {escape(str(w.registrant_state))}"
+            if hasattr(w, 'registrant_postal_code') and w.registrant_postal_code:
+                result += f"\n  • Postal Code: {escape(str(w.registrant_postal_code))}"
+            if hasattr(w, 'registrant_country') and w.registrant_country:
+                result += f"\n  • Country: {escape(str(w.registrant_country))}"
+            if hasattr(w, 'registrant_phone') and w.registrant_phone:
+                result += f"\n  • Phone: {escape(str(w.registrant_phone))}"
+            if hasattr(w, 'registrant_email') and w.registrant_email:
+                result += f"\n  • Email: {escape(str(w.registrant_email))}"
         
         # Administrative Contact
-        result += f"\n\n👤 *Administrative Contact*"
-        result += f"\n  • Name: {escape(w.admin_name or 'N/A')}"
-        result += f"\n  • Organization: {escape(w.admin_organization or 'N/A')}"
-        result += f"\n  • Email: {escape(w.admin_email or 'N/A')}"
-        result += f"\n  • Phone: {escape(w.admin_phone or 'N/A')}"
+        if any([hasattr(w, 'admin_name'), hasattr(w, 'admin_organization'), hasattr(w, 'admin_email')]):
+            result += f"\n\n👤 *Administrative Contact*"
+            if hasattr(w, 'admin_name') and w.admin_name:
+                result += f"\n  • Name: {escape(str(w.admin_name))}"
+            if hasattr(w, 'admin_organization') and w.admin_organization:
+                result += f"\n  • Organization: {escape(str(w.admin_organization))}"
+            if hasattr(w, 'admin_email') and w.admin_email:
+                result += f"\n  • Email: {escape(str(w.admin_email))}"
+            if hasattr(w, 'admin_phone') and w.admin_phone:
+                result += f"\n  • Phone: {escape(str(w.admin_phone))}"
         
         # Technical Contact
-        result += f"\n\n👤 *Technical Contact*"
-        result += f"\n  • Name: {escape(w.tech_name or 'N/A')}"
-        result += f"\n  • Organization: {escape(w.tech_organization or 'N/A')}"
-        result += f"\n  • Email: {escape(w.tech_email or 'N/A')}"
-        result += f"\n  • Phone: {escape(w.tech_phone or 'N/A')}"
+        if any([hasattr(w, 'tech_name'), hasattr(w, 'tech_organization'), hasattr(w, 'tech_email')]):
+            result += f"\n\n👤 *Technical Contact*"
+            if hasattr(w, 'tech_name') and w.tech_name:
+                result += f"\n  • Name: {escape(str(w.tech_name))}"
+            if hasattr(w, 'tech_organization') and w.tech_organization:
+                result += f"\n  • Organization: {escape(str(w.tech_organization))}"
+            if hasattr(w, 'tech_email') and w.tech_email:
+                result += f"\n  • Email: {escape(str(w.tech_email))}"
+            if hasattr(w, 'tech_phone') and w.tech_phone:
+                result += f"\n  • Phone: {escape(str(w.tech_phone))}"
         
         # Billing Contact
-        result += f"\n\n👤 *Billing Contact*"
-        result += f"\n  • Name: {escape(w.billing_name or 'N/A')}"
-        result += f"\n  • Organization: {escape(w.billing_organization or 'N/A')}"
-        result += f"\n  • Email: {escape(w.billing_email or 'N/A')}"
+        if any([hasattr(w, 'billing_name'), hasattr(w, 'billing_organization'), hasattr(w, 'billing_email')]):
+            result += f"\n\n👤 *Billing Contact*"
+            if hasattr(w, 'billing_name') and w.billing_name:
+                result += f"\n  • Name: {escape(str(w.billing_name))}"
+            if hasattr(w, 'billing_organization') and w.billing_organization:
+                result += f"\n  • Organization: {escape(str(w.billing_organization))}"
+            if hasattr(w, 'billing_email') and w.billing_email:
+                result += f"\n  • Email: {escape(str(w.billing_email))}"
         
         # Dates
         result += f"\n\n📅 *Important Dates*"
@@ -762,8 +793,9 @@ async def whois_lookup_complete(domain):
             result += f"\n  • Created: {created}"
             
             # Domain age
-            age = (datetime.now() - created).days
-            result += f"\n  • Age: {age} days ({age//365} years)"
+            if isinstance(created, datetime):
+                age = (datetime.now() - created).days
+                result += f"\n  • Age: {age} days ({age//365} years)"
         
         if w.expiration_date:
             if isinstance(w.expiration_date, list):
@@ -773,9 +805,10 @@ async def whois_lookup_complete(domain):
             result += f"\n  • Expires: {expires}"
             
             # Days until expiry
-            days_left = (expires - datetime.now()).days
-            if days_left < 30:
-                result += f"\n  ⚠️ *Expires in {days_left} days!*"
+            if isinstance(expires, datetime):
+                days_left = (expires - datetime.now()).days
+                if days_left < 30:
+                    result += f"\n  ⚠️ *Expires in {days_left} days!*"
         
         if w.updated_date:
             if isinstance(w.updated_date, list):
@@ -787,24 +820,26 @@ async def whois_lookup_complete(domain):
         # Nameservers
         if w.name_servers:
             result += f"\n\n🌐 *Nameservers*"
-            for ns in w.name_servers[:10]:
-                result += f"\n  • {escape(ns)}"
+            for ns in w.name_servers[:8]:
+                result += f"\n  • {escape(str(ns))}"
         
         # DNSSEC
-        if w.dnssec:
-            result += f"\n\n🔐 *DNSSEC:* {escape(w.dnssec)}"
+        if hasattr(w, 'dnssec') and w.dnssec:
+            result += f"\n\n🔐 *DNSSEC:* {escape(str(w.dnssec))}"
         
-        # Status
+        # Domain Status
         if w.status:
             result += f"\n\n📊 *Domain Status*"
-            for status in w.status[:5]:
-                result += f"\n  • {escape(status)}"
+            if isinstance(w.status, list):
+                for status in w.status[:5]:
+                    result += f"\n  • {escape(str(status))}"
+            else:
+                result += f"\n  • {escape(str(w.status))}"
         
         result += "\n━━━━━━━━━━━━━━━━━━━━━"
         return result
     except Exception as e:
         return f"❌ WHOIS Error: {escape(str(e))}"
-
 # -------------------- TRACEROUTE (DETAILED) --------------------
 async def traceroute_detailed(host):
     """Detailed traceroute with geographic info"""
