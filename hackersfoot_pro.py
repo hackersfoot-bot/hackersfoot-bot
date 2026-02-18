@@ -1300,61 +1300,10 @@ async def phone_osint_enhanced(number):
 
 🏢 *Carrier*
   • Name: {escape(carrier_name) if carrier_name else 'Unknown'}
-  • Type: {escape(line_type)}
-
-📊 *Statistics*"""
-        
-        # Country code lookup
-        country_code = phone.country_code
-        result += f"\n  • Country Code: +{country_code}"
-        
-        # National destination code (area code)
-        if len(str(phone.national_number)) > 7:
-            ndc = str(phone.national_number)[:3]
-            result += f"\n  • Area Code: {ndc}"
-        
-        # Number length
-        result += f"\n  • Length: {len(str(phone.national_number))} digits"
-        
-        # Format validation
-        result += f"\n  • Formats: {len(phonenumbers.PhoneNumberFormat._value2member_map_)} available"
-        
-        # Spam database check (simulated)
-        spam_indicators = []
-        if line_type == "Premium Rate":
-            spam_indicators.append("⚠️ Premium Rate - May incur charges")
-        if carrier_name and "Virtual" in carrier_name:
-            spam_indicators.append("⚠️ Virtual Number - May be VoIP")
-        
-        if spam_indicators:
-            result += f"\n\n⚠️ *Warnings*"
-            for warning in spam_indicators:
-                result += f"\n  • {warning}"
-        
-        # Carrier lookup via API (simulated)
-        result += f"\n\n🔍 *Additional Intelligence*"
-        result += f"\n  • Number Format: {'International' if number.startswith('+') else 'Local'}"
-        result += f"\n  • Dialing Prefix: {phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)}"
-        
-        # Geographic coordinates (simulated)
-        if country:
-            # Get country coordinates
-            try:
-                r = requests.get(f"https://restcountries.com/v3.1/name/{country}", timeout=2)
-                if r.status_code == 200:
-                    data = r.json()
-                    if data:
-                        lat = data[0]['latlng'][0]
-                        lon = data[0]['latlng'][1]
-                        result += f"\n  • Country Coordinates: {lat}, {lon}"
-            except:
-                pass
-        
-        result += "\n━━━━━━━━━━━━━━━━━━━━━"
+━━━━━━━━━━━━━━━━━━━━━"""
         return result
     except Exception as e:
-        return f"❌ Error: {escape(str(e))}"
-
+        return f"❌ Error: Invalid phone number format. Use +[country code][number] e.g., +911234567890"
 # -------------------- HASH GENERATOR & REVERSE --------------------
 async def hash_operations(text):
     """Generate hashes and attempt reverse lookup"""
