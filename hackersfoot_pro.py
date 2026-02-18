@@ -37,8 +37,8 @@ import ipaddress
 import maxminddb
 import pycountry
 import tldextract
-import censys.certificates
-import shodan
+# import censys.certificates
+# import shodan
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ParseMode
