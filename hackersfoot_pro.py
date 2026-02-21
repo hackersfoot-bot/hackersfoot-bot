@@ -26,6 +26,9 @@ import dns.zone
 import requests
 import phonenumbers
 from phonenumbers import carrier, geocoder, timezone
+import requests
+from bs4 import BeautifulSoup
+import urllib.parse
 import whois
 from bs4 import BeautifulSoup
 import exifread
@@ -1292,12 +1295,6 @@ async def email_osint_theharvester(email):
         return f"❌ Error: {escape(str(e))}"
 
 # -------------------- API-FREE GLOBAL PHONE OSINT --------------------
-import phonenumbers
-from phonenumbers import carrier, geocoder, timezone
-import requests
-from bs4 import BeautifulSoup
-import urllib.parse
-
 async def phone_osint_global_free(number):
     """Complete phone intelligence using only free sources (no APIs)"""
     try:
