@@ -1291,15 +1291,29 @@ async def email_osint_theharvester(email):
     except Exception as e:
         return f"❌ Error: {escape(str(e))}"
 
-# -------------------- PHONE OSINT (ENHANCED) --------------------
-async def phone_osint_enhanced(number):
-    """Enhanced phone intelligence with carrier, location, line type"""
+# -------------------- API-FREE GLOBAL PHONE OSINT --------------------
+import phonenumbers
+from phonenumbers import carrier, geocoder, timezone
+import requests
+from bs4 import BeautifulSoup
+import urllib.parse
+
+async def phone_osint_global_free(number):
+    """Complete phone intelligence using only free sources (no APIs)"""
     try:
+        # Basic validation using Google's libphonenumber (works for ALL countries)
         phone = phonenumbers.parse(number, None)
         valid = phonenumbers.is_valid_number(phone)
         possible = phonenumbers.is_possible_number(phone)
+        
+        if not valid:
+            return "❌ Invalid phone number. Use +[country code][number] (e.g., +12125551234 for USA, +919876543210 for India)"
+        
+        # Basic info (works globally)
         country = geocoder.description_for_number(phone, "en")
-        region = geocoder.description_for_number(phone, "en")
+        country_code = phone.country_code
+        national_number = str(phone.national_number)
+        
         carrier_name = carrier.name_for_number(phone, "en")
         timezones = timezone.time_zones_for_number(phone)
         
@@ -1315,13 +1329,13 @@ async def phone_osint_enhanced(number):
         international = phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
         e164 = phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
         
-        result = f"""🔍 *Enhanced Phone OSINT*
+        result = f"""🔍 *Global Phone Intelligence (No API)*
 ━━━━━━━━━━━━━━━━━━━━━
-📱 *Number Information*
-  • Original: {escape(number)}
-  • E.164: `{escape(e164)}`
-  • International: {escape(international)}
-  • National: {escape(national)}
+📱 *Number:* {escape(number)}
+🌍 *Country:* {escape(country)} (+{country_code})
+📌 *E.164:* `{escape(e164)}`
+📞 *International:* {escape(international)}
+📞 *National:* {escape(national)}
 
 ✅ *Validation*
   • Valid: {'✅ Yes' if valid else '❌ No'}
@@ -1330,15 +1344,300 @@ async def phone_osint_enhanced(number):
 
 🌍 *Location*
   • Country: {escape(country) if country else 'Unknown'}
-  • Region: {escape(region) if region else 'Unknown'}
   • Timezone: {escape(', '.join(timezones)) if timezones else 'Unknown'}
 
-🏢 *Carrier*
-  • Name: {escape(carrier_name) if carrier_name else 'Unknown'}
-━━━━━━━━━━━━━━━━━━━━━"""
+🏢 *Carrier:* {escape(carrier_name) if carrier_name else 'Unknown'}
+"""
+        
+        # ============ SOURCE 1: Area Code Information (Global) ============
+        if len(national_number) > 3:
+            area_code = national_number[:3]
+            result += f"\n📞 *Area Code: {area_code}*"
+            
+            # Global area code database (simplified)
+            area_codes = {
+                # North America
+                "212": "New York, NY", "213": "Los Angeles, CA", "312": "Chicago, IL",
+                "305": "Miami, FL", "415": "San Francisco, CA", "718": "Brooklyn, NY",
+                "416": "Toronto, ON", "604": "Vancouver, BC", "514": "Montreal, QC",
+                
+                # UK
+                "20": "London", "121": "Birmingham", "161": "Manchester",
+                "113": "Leeds", "151": "Liverpool", "114": "Sheffield",
+                
+                # India
+                "22": "Mumbai", "44": "Chennai", "33": "Kolkata",
+                "80": "Bangalore", "40": "Hyderabad", "20": "Pune",
+                
+                # Australia
+                "2": "Sydney/Canberra", "3": "Melbourne", "7": "Brisbane",
+                "8": "Perth/Adelaide", "8": "Perth", "8": "Adelaide",
+                
+                # Germany
+                "30": "Berlin", "40": "Hamburg", "89": "Munich",
+                "69": "Frankfurt", "221": "Cologne", "211": "Düsseldorf",
+                
+                # France
+                "1": "Paris", "4": "Marseille", "5": "Lyon",
+                "3": "Lille", "5": "Bordeaux", "4": "Toulouse",
+                
+                # Brazil
+                "11": "São Paulo", "21": "Rio de Janeiro", "31": "Belo Horizonte",
+                "41": "Curitiba", "51": "Porto Alegre", "61": "Brasília",
+                
+                # Japan
+                "3": "Tokyo", "6": "Osaka", "52": "Nagoya",
+                "11": "Sapporo", "82": "Hiroshima", "92": "Fukuoka",
+                
+                # China
+                "10": "Beijing", "20": "Guangzhou", "21": "Shanghai",
+                "755": "Shenzhen", "28": "Chengdu", "29": "Xi'an"
+            }
+            
+            if area_code in area_codes:
+                result += f"\n  • Likely Location: {escape(area_codes[area_code])}"
+        
+        # ============ SOURCE 2: Global Search Links ============
+        result += f"\n\n🔍 *Global Search*"
+        encoded = urllib.parse.quote(number)
+        
+        search_engines = [
+            ("Google", f"https://www.google.com/search?q={encoded}"),
+            ("Bing", f"https://www.bing.com/search?q={encoded}"),
+            ("DuckDuckGo", f"https://duckduckgo.com/?q={encoded}"),
+            ("Yandex", f"https://yandex.com/search/?text={encoded}"),
+            ("Baidu", f"https://www.baidu.com/s?wd={encoded}")
+        ]
+        
+        for name, url in search_engines:
+            result += f"\n  • {escape(name)}: [Search]({url})"
+        
+        # ============ SOURCE 3: Global Spam Databases ============
+        result += f"\n\n⚠️ *Global Spam Check*"
+        
+        spam_sites = [
+            ("SpamCalls.net", f"https://www.spamcalls.net/en/search?q={number}"),
+            ("WhoCalled.us", f"https://whocalled.us/phone/{number}"),
+            ("Tellows", f"https://www.tellows.com/num/{number}"),
+            ("FindWhoCallsYou", f"https://findwhocallsyou.com/{number}"),
+            ("CallerID Test", f"https://calleridtest.com/{number}"),
+            ("Should I Answer", f"https://shouldianswer.com/phone/{number}")
+        ]
+        
+        for name, url in spam_sites:
+            result += f"\n  • {escape(name)}: [Check]({url})"
+        
+        # ============ SOURCE 4: Social Media Search (Global Platforms) ============
+        result += f"\n\n👤 *Social Media Search*"
+        
+        social_platforms = [
+            ("Facebook", f"https://www.facebook.com/search/top?q={encoded}"),
+            ("Twitter", f"https://twitter.com/search?q={encoded}"),
+            ("Instagram", f"https://www.instagram.com/accounts/web_search/?q={encoded}"),
+            ("LinkedIn", f"https://www.linkedin.com/search/results/all/?keywords={encoded}"),
+            ("Telegram", f"https://t.me/search?q={encoded}"),
+            ("WhatsApp", f"https://wa.me/{number}"),
+            ("Skype", f"https://www.skype.com/en/search/?q={encoded}"),
+            ("Snapchat", f"https://www.snapchat.com/add/{national_number}"),
+            ("TikTok", f"https://www.tiktok.com/search?q={encoded}"),
+            ("YouTube", f"https://www.youtube.com/results?search_query={encoded}")
+        ]
+        
+        for name, url in social_platforms:
+            result += f"\n  • {escape(name)}: [Search]({url})"
+        
+        # ============ SOURCE 5: People Search Engines ============
+        result += f"\n\n👥 *People Search Engines*"
+        
+        people_searches = [
+            ("PeekYou", f"https://peekyou.com/@{national_number}"),
+            ("Pipl", f"https://pipl.com/search/?q={encoded}"),
+            ("Spokeo", f"https://www.spokeo.com/{encoded}"),
+            ("Whitepages", f"https://www.whitepages.com/phone/{number}"),
+            ("ZabaSearch", f"https://www.zabasearch.com/phone/{number}")
+        ]
+        
+        for name, url in people_searches:
+            result += f"\n  • {escape(name)}: [Search]({url})"
+        
+        # ============ SOURCE 6: Country-Specific Directories ============
+        result += f"\n\n🗺️ *Country-Specific Resources*"
+        
+        # India
+        if country_code == 91:
+            result += f"\n  • India (Truecaller): [Search](https://www.truecaller.com/search/in/{number})"
+            result += f"\n  • India (CEIR): [Check](https://ceir.gov.in/) (Blocked/Lost IMEI)"
+            result += f"\n  • India (JustDial): [Search](https://www.justdial.com/search?q={encoded})"
+        
+        # USA/Canada
+        elif country_code == 1:
+            result += f"\n  • USA (Whitepages): [Search](https://www.whitepages.com/phone/{number})"
+            result += f"\n  • USA (SpyDialer): [Search](https://www.spydialer.com/default.aspx?search={number})"
+            result += f"\n  • USA (AnyWho): [Search](https://www.anywho.com/phone/{number})"
+            result += f"\n  • Canada (Canada411): [Search](https://www.canada411.ca/search/?stype=si&what={number})"
+        
+        # UK
+        elif country_code == 44:
+            result += f"\n  • UK (WhoCalledMe): [Search](https://whocalledme.co.uk/phone-number/{number})"
+            result += f"\n  • UK (UKPhonebook): [Search](https://www.ukphonebook.com/phone/{number})"
+            result += f"\n  • UK (192.com): [Search](https://www.192.com/people/search/phone/{number})"
+        
+        # Australia
+        elif country_code == 61:
+            result += f"\n  • Australia (ReverseAustralia): [Search](https://www.reverseaustralia.com/phone/{number})"
+            result += f"\n  • Australia (WhitePages): [Search](https://www.whitepages.com.au/phone/{number})"
+        
+        # Germany
+        elif country_code == 49:
+            result += f"\n  • Germany (DasTelefonbuch): [Search](https://www.dastelefonbuch.de/Inverssuche/{number})"
+            result += f"\n  • Germany (GelbeSeiten): [Search](https://www.gelbeseiten.de/rufnummernsuche/{number})"
+        
+        # France
+        elif country_code == 33:
+            result += f"\n  • France (PagesBlanches): [Search](https://www.pagesblanches.fr/reverse?phone={number})"
+            result += f"\n  • France (118000): [Search](https://www.118000.fr/recherche?q={number})"
+        
+        # Brazil
+        elif country_code == 55:
+            result += f"\n  • Brazil (ConsultaTelefone): [Search](https://consultatelenumero.com.br/busca/{number})"
+            result += f"\n  • Brazil (QuemLigou): [Search](https://quemligou.com.br/telefone/{number})"
+        
+        # Mexico
+        elif country_code == 52:
+            result += f"\n  • Mexico (MexicoWhitePages): [Search](https://www.mexicowhitepages.com/phone/{number})"
+        
+        # Japan
+        elif country_code == 81:
+            result += f"\n  • Japan (JapanPhoneBook): [Search](https://www.japanphonebook.com/phone/{number})"
+            result += f"\n  • Japan (Denwa): [Search](https://denwa.jp/search?q={number})"
+        
+        # China
+        elif country_code == 86:
+            result += f"\n  • China (ChinaPhoneBook): [Search](https://www.chinaphonebook.com/phone/{number})"
+        
+        # Russia
+        elif country_code == 7:
+            result += f"\n  • Russia (Poiskovik): [Search](https://poiskovik.com/phone/{number})"
+            result += f"\n  • Russia (Yandex People): [Search](https://yandex.ru/people/search?text={encoded})"
+        
+        # UAE
+        elif country_code == 971:
+            result += f"\n  • UAE (UAECaller): [Search](https://www.uaecaller.com/search/{number})"
+        
+        # Saudi Arabia
+        elif country_code == 966:
+            result += f"\n  • Saudi (SaudiPages): [Search](https://www.saudipages.com/phone/{number})"
+        
+        # Egypt
+        elif country_code == 20:
+            result += f"\n  • Egypt (EgyptPhoneBook): [Search](https://www.egyptphonebook.com/phone/{number})"
+        
+        # Nigeria
+        elif country_code == 234:
+            result += f"\n  • Nigeria (NigeriaPhoneBook): [Search](https://www.nigeriaphonebook.com/phone/{number)}"
+            result += f"\n  • Nigeria (NaijaCall): [Search](https://naijacall.com/search/{number})"
+        
+        # South Africa
+        elif country_code == 27:
+            result += f"\n  • South Africa (SAWhitePages): [Search](https://www.sawhitepages.co.za/phone/{number})"
+        
+        # Pakistan
+        elif country_code == 92:
+            result += f"\n  • Pakistan (PakistanPhoneBook): [Search](https://www.pakistanphonebook.com/phone/{number})"
+        
+        # Indonesia
+        elif country_code == 62:
+            result += f"\n  • Indonesia (IndonesiaPhoneBook): [Search](https://www.indonesiaphonebook.com/phone/{number})"
+        
+        # Philippines
+        elif country_code == 63:
+            result += f"\n  • Philippines (PhilippinesPhoneBook): [Search](https://www.philippinesphonebook.com/phone/{number})"
+        
+        # Vietnam
+        elif country_code == 84:
+            result += f"\n  • Vietnam (VietnamPhoneBook): [Search](https://www.vietnamphonebook.com/phone/{number})"
+        
+        # Thailand
+        elif country_code == 66:
+            result += f"\n  • Thailand (ThailandPhoneBook): [Search](https://www.thailandphonebook.com/phone/{number})"
+        
+        # Malaysia
+        elif country_code == 60:
+            result += f"\n  • Malaysia (MalaysiaPhoneBook): [Search](https://www.malaysiaphonebook.com/phone/{number})"
+        
+        # Singapore
+        elif country_code == 65:
+            result += f"\n  • Singapore (SingaporePhoneBook): [Search](https://www.singaporephonebook.com/phone/{number})"
+        
+        # Default for any other country
+        else:
+            result += f"\n  • Global (Numlookup): [Search](https://www.numlookup.com/{number})"
+            result += f"\n  • Global (ReversePhoneCheck): [Search](https://www.reversephonecheck.com/{number})"
+            result += f"\n  • Global (ThatsThem): [Search](https://thatsthem.com/phone/{number})"
+            result += f"\n  • Global (PhoneNumber.info): [Search](https://www.phonenumber.info/search/{number})"
+        
+        # ============ SOURCE 7: WhatsApp & Messaging Apps ============
+        result += f"\n\n💬 *Messaging Apps*"
+        result += f"\n  • WhatsApp: [Open Chat](https://wa.me/{number})"
+        result += f"\n  • Telegram: [Search](https://t.me/search?q={number})"
+        result += f"\n  • Signal: [Not available via web]"
+        result += f"\n  • Viber: [Check](https://chats.viber.com/?number={number})"
+        result += f"\n  • WeChat: [Not available via web]"
+        result += f"\n  • Line: [Not available via web]"
+        
+        # ============ SOURCE 8: Business/Reverse WHOIS ============
+        result += f"\n\n🌐 *Business & Domain Search*"
+        result += f"\n  • Reverse WHOIS: [Search](https://www.whois.com/whois/{number})"
+        result += f"\n  • OpenCorporates: [Search](https://opencorporates.com/companies?q={encoded})"
+        result += f"\n  • Bloomberg: [Search](https://www.bloomberg.com/search?query={encoded})"
+        
+        # ============ SOURCE 9: Breach Database Search ============
+        result += f"\n\n🔓 *Breach Database Search*"
+        result += f"\n  • HaveIBeenPwned: [Check](https://haveibeenpwned.com/Account/{encoded})"
+        result += f"\n  • DeHashed: [Search](https://dehashed.com/search?query={number})"
+        result += f"\n  • LeakCheck: [Search](https://leakcheck.io/search?query={number})"
+        result += f"\n  • SnusBase: [Search](https://snusbase.com/search?q={number})"
+        
+        # ============ SOURCE 10: Country Coordinates Map ============
+        try:
+            # Get country coordinates from restcountries API (free, no key needed)
+            coord_response = requests.get(f"https://restcountries.com/v3.1/name/{country}", timeout=3)
+            if coord_response.status_code == 200:
+                coord_data = coord_response.json()
+                if coord_data and 'latlng' in coord_data[0]:
+                    lat = coord_data[0]['latlng'][0]
+                    lon = coord_data[0]['latlng'][1]
+                    map_url = f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=5/{lat}/{lon}"
+                    result += f"\n\n🗺️ *Country Map*: [View on OpenStreetMap]({map_url})"
+        except:
+            pass
+        
+        # ============ SOURCE 11: Number Pattern Analysis ============
+        result += f"\n\n📊 *Number Pattern Analysis*"
+        if national_number.startswith('0'):
+            result += f"\n  • Leading Zero: Yes (common in local formats)"
+        if len(national_number) == 10:
+            result += f"\n  • Standard Length: 10 digits (common for mobile)"
+        elif len(national_number) < 10:
+            result += f"\n  • Short Number: {len(national_number)} digits (possible local/short code)"
+        elif len(national_number) > 12:
+            result += f"\n  • Long Number: {len(national_number)} digits (possible business/trunk line)"
+        
+        # Toll-free detection
+        toll_free_prefixes = ['800', '888', '877', '866', '855', '844']
+        if any(national_number.startswith(prefix) for prefix in toll_free_prefixes):
+            result += f"\n  • Toll-Free: Yes"
+        
+        # Premium rate detection
+        premium_prefixes = ['900', '976', '540']
+        if any(national_number.startswith(prefix) for prefix in premium_prefixes):
+            result += f"\n  • Premium Rate: Yes (may incur charges)"
+        
+        result += "\n━━━━━━━━━━━━━━━━━━━━━"
         return result
+        
     except Exception as e:
-        return f"❌ Error: Invalid phone number format. Use +[country code][number] e.g., +911234567890"
+        return f"❌ Error: {escape(str(e))}"
 # -------------------- HASH GENERATOR & REVERSE --------------------
 async def hash_operations(text):
     """Generate hashes and attempt reverse lookup"""
